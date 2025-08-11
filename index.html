@@ -75,7 +75,9 @@
       // Call LottieFiles API to get animation metadata for slug
       const apiUrl = `https://lottiefiles.com/v1/animations/${encodeURIComponent(slug)}`;
       const response = await fetch(apiUrl);
-      if(!response.ok) throw new Error(Failed to fetch animation: ${response.status} ${response.statusText});
+   if(!response.ok) throw new Error(`Failed to fetch animation: ${response.status} ${response.statusText}`);
+
+
 
       const lottieData = await response.json();
 
