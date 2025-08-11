@@ -75,9 +75,7 @@
       // Call LottieFiles API to get animation metadata for slug
       const apiUrl = `https://lottiefiles.com/v1/animations/${encodeURIComponent(slug)}`;
       const response = await fetch(apiUrl);
-   if(!response.ok) throw new Error(`Failed to fetch animation: ${response.status} ${response.statusText}`);
-
-
+      if(!response.ok) throw new Error(`Failed to fetch animation: ${response.status} ${response.statusText}`);
 
       const lottieData = await response.json();
 
@@ -90,7 +88,7 @@
       const jsonVariant = lottieData.data.variants.find(v => v.type === "json");
       if (!jsonVariant) throw new Error("No JSON variant found for this animation");
 
-      const animationURL = https://assets-v2.lottiefiles.com/${jsonVariant.path};
+      const animationURL = `https://assets-v2.lottiefiles.com/${jsonVariant.path}`;
 
       // Load animation from URL
       anim = lottie.loadAnimation({
@@ -104,13 +102,13 @@
       anim.addEventListener("DOMLoaded", () => {
         seekbar.max = Math.floor(anim.totalFrames);
         seekbar.value = 0;
-        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+        frameCounter.textContent = `0 / ${Math.floor(anim.totalFrames)}`;
         controls.style.display = 'flex';
         downloadHeader.style.display = "block";
 
         // Show download links for all variants
         downloadLinks.innerHTML = lottieData.data.variants.map(v => {
-          return <li><a href="https://assets-v2.lottiefiles.com/${v.path}" target="_blank" rel="noopener noreferrer">${v.type} (${v.fileSize || "unknown"} bytes)</a></li>;
+          return `<li><a href="https://assets-v2.lottiefiles.com/${v.path}" target="_blank" rel="noopener noreferrer">${v.type} (${v.fileSize || "unknown"} bytes)</a></li>`;
         }).join('');
       });
 
@@ -118,7 +116,7 @@
         if(!isUserSeeking) {
           const currentFrame = Math.floor(anim.currentFrame);
           seekbar.value = currentFrame;
-          frameCounter.textContent = ${currentFrame} / ${Math.floor(anim.totalFrames)};
+          frameCounter.textContent = `${currentFrame} / ${Math.floor(anim.totalFrames)}`;
         }
       });
 
@@ -127,7 +125,7 @@
         playPauseBtn.textContent = "▶ Play";
         anim.goToAndStop(0, true);
         seekbar.value = 0;
-        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+        frameCounter.textContent = `0 / ${Math.floor(anim.totalFrames)}`;
       });
 
     } catch(e) {
@@ -144,7 +142,7 @@
       if(Math.floor(anim.currentFrame) >= Math.floor(anim.totalFrames)) {
         anim.goToAndStop(0, true);
         seekbar.value = 0;
-        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+        frameCounter.textContent = `0 / ${Math.floor(anim.totalFrames)}`;
       }
       anim.play();
       playPauseBtn.textContent = "⏸ Pause";
@@ -160,14 +158,16 @@
       isPlaying = false;
     }
   });
+
   seekbar.addEventListener('mouseup', () => {
     isUserSeeking = false;
   });
+
   seekbar.addEventListener('input', () => {
     if(!anim) return;
     const frame = parseInt(seekbar.value);
     anim.goToAndStop(frame, true);
-    frameCounter.textContent = ${frame} / ${Math.floor(anim.totalFrames)};
+    frameCounter.textContent = `${frame} / ${Math.floor(anim.totalFrames)}`;
   });
 
   // Touch events for mobile
@@ -179,6 +179,7 @@
       isPlaying = false;
     }
   });
+
   seekbar.addEventListener('touchend', () => {
     isUserSeeking = false;
   });
@@ -190,6 +191,5 @@
     }
   });
 </script>
-
 </body>
 </html>
