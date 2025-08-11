@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lottie Downloader & Previewer - Using LottieFiles API</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.10.1/lottie.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px; }
+    input, button { font-size: 16px; padding: 8px; }
+    #lottie-preview { width: 400px; height: 400px; border: 1px solid #ddd; margin-top: 20px; background: #f9f9f9; }
+    .controls { margin-top: 15px; display: flex; align-items: center; gap: 10px; }
+    .frame-counter { font-size: 14px; min-width: 80px; text-align: right; user-select: none; }
+    input[type="range"] { flex-grow: 1; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h1>Lottie Downloader & Previewer (LottieFiles API)</h1>
+
+<label for="slug-input">Enter Lottie Slug:</label><br />
+<input id="slug-input" type="text" placeholder="e.g. play-pause-ukuAv1xAE0" style="width:100%; box-sizing:border-box;" />
+<button id="load-btn">Load Animation</button>
+
+<p id="error-msg" style="color:red;"></p>
+
+<h2 id="animation-name"></h2>
+<p id="animation-desc"></p>
+
+<div id="lottie-preview"></div>
+
+<div class="controls" style="display:none;" id="controls">
+  <button id="playPauseBtn">▶ Play</button>
+  <input type="range" id="seekbar" min="0" step="1" />
+  <div class="frame-counter" id="frameCounter">0 / 0</div>
+</div>
+
+<h3 id="download-header" style="display:none;">Download Links:</h3>
+<ul id="download-links"></ul>
+
+<script>
+  const slugInput = document.getElementById('slug-input');
+  const loadBtn = document.getElementById('load-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const animName = document.getElementById('animation-name');
+  const animDesc = document.getElementById('animation-desc');
+  const preview = document.getElementById('lottie-preview');
+  const controls = document.getElementById('controls');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const seekbar = document.getElementById('seekbar');
+  const frameCounter = document.getElementById('frameCounter');
+  const downloadLinks = document.getElementById('download-links');
+  const downloadHeader = document.getElementById('download-header');
+
+  let anim = null;
+  let isPlaying = false;
+  let isUserSeeking = false;
+
+  async function loadLottie(slug) {
+    errorMsg.textContent = "";
+    animName.textContent = "";
+    animDesc.textContent = "";
+    preview.innerHTML = "";
+    controls.style.display = 'none';
+    downloadLinks.innerHTML = "";
+    downloadHeader.style.display = "none";
+
+    if(anim) {
+      anim.destroy();
+      anim = null;
+      isPlaying = false;
+      playPauseBtn.textContent = "▶ Play";
+    }
+
+    try {
+      // Call LottieFiles API to get animation metadata for slug
+      const apiUrl = `https://lottiefiles.com/v1/animations/${encodeURIComponent(slug)}`;
+
+      // If you have an API key, add it here in headers (commented)
+      // const apiKey = 'YOUR_API_KEY';
+      // const response = await fetch(apiUrl, {
+      //   headers: { 'Authorization': `Bearer ${apiKey}` }
+      // });
+
+      // For demo, no auth header:
+      const response = await fetch(apiUrl);
+      if(!response.ok) throw new Error(Failed to fetch animation: ${response.status} ${response.statusText});
+
+      const lottieData = await response.json();
+
+      if (!lottieData?.data) throw new Error("Invalid data structure from API");
+
+      animName.textContent = lottieData.data.name || "No name";
+      animDesc.textContent = lottieData.data.description || "";
+
+      // The animation variants have URLs, find the JSON variant
+      const jsonVariant = lottieData.data.variants.find(v => v.type === "json");
+      if (!jsonVariant) throw new Error("No JSON variant found for this animation");
+
+      const animationURL = https://assets-v2.lottiefiles.com/${jsonVariant.path};
+
+      // Load animation from URL
+      anim = lottie.loadAnimation({
+        container: preview,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: animationURL,
+      });
+
+      anim.addEventListener("DOMLoaded", () => {
+        seekbar.max = Math.floor(anim.totalFrames);
+        seekbar.value = 0;
+        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+        controls.style.display = 'flex';
+        downloadHeader.style.display = "block";
+
+        // Show download links for all variants
+        downloadLinks.innerHTML = lottieData.data.variants.map(v => {
+          return <li><a href="https://assets-v2.lottiefiles.com/${v.path}" target="_blank" rel="noopener noreferrer">${v.type} (${v.fileSize || "unknown"} bytes)</a></li>;
+        }).join('');
+      });
+
+      anim.addEventListener("enterFrame", () => {
+        if(!isUserSeeking) {
+          const currentFrame = Math.floor(anim.currentFrame);
+          seekbar.value = currentFrame;
+          frameCounter.textContent = ${currentFrame} / ${Math.floor(anim.totalFrames)};
+        }
+      });
+
+      anim.addEventListener("complete", () => {
+        isPlaying = false;
+        playPauseBtn.textContent = "▶ Play";
+        anim.goToAndStop(0, true);
+        seekbar.value = 0;
+        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+      });
+
+    } catch(e) {
+      errorMsg.textContent = e.message;
+    }
+  }
+
+  playPauseBtn.addEventListener('click', () => {
+    if(!anim) return;
+    if(isPlaying) {
+      anim.pause();
+      playPauseBtn.textContent = "▶ Play";
+    } else {
+      if(Math.floor(anim.currentFrame) >= Math.floor(anim.totalFrames)) {
+        anim.goToAndStop(0, true);
+        seekbar.value = 0;
+        frameCounter.textContent = 0 / ${Math.floor(anim.totalFrames)};
+      }
+      anim.play();
+      playPauseBtn.textContent = "⏸ Pause";
+    }
+    isPlaying = !isPlaying;
+  });
+
+  seekbar.addEventListener('mousedown', () => {
+    isUserSeeking = true;
+    if(isPlaying) {
+      anim.pause();
+      playPauseBtn.textContent = "▶ Play";
+      isPlaying = false;
+    }
+  });
+  seekbar.addEventListener('mouseup', () => {
+    isUserSeeking = false;
+  });
+  seekbar.addEventListener('input', () => {
+    if(!anim) return;
+    const frame = parseInt(seekbar.value);
+    anim.goToAndStop(frame, true);
+    frameCounter.textContent = ${frame} / ${Math.floor(anim.totalFrames)};
+  });
+
+  // Touch events for mobile
+  seekbar.addEventListener('touchstart', () => {
+    isUserSeeking = true;
+    if(isPlaying) {
+      anim.pause();
+      playPauseBtn.textContent = "▶ Play";
+      isPlaying = false;
+    }
+  });
+  seekbar.addEventListener('touchend', () => {
+    isUserSeeking = false;
+  });
+
+  loadBtn.addEventListener('click', () => {
+    const slug = slugInput.value.trim();
+    if(slug) {
+      loadLottie(slug);
+    }
+  });
+</script>
+
+</body>
+</html>
