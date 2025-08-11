@@ -107,10 +107,10 @@
         downloadHeader.style.display = "block";
 
         // Show download links for all variants
-        downloadLinks.innerHTML = lottieData.data.variants.map(v => {
-          return `<li><a href="https://assets-v2.lottiefiles.com/${v.path}" target="_blank" rel="noopener noreferrer">${v.type} (${v.fileSize || "unknown"} bytes)</a></li>`;
-        }).join('');
-      });
+      downloadLinks.innerHTML = lottieData.data.variants.map(v => {
+  return `<li><a href="https://assets-v2.lottiefiles.com/${v.path}" target="_blank">${v.type}</a></li>`;
+}).join('');
+
 
       anim.addEventListener("enterFrame", () => {
         if(!isUserSeeking) {
